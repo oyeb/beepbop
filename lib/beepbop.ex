@@ -13,7 +13,7 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
       alias Ecto.Multi
 
       @repo_opts nil
-      
+
       defp _beepbop_repo do
         Keyword.fetch!(unquote(opts), :ecto_repo)
       end
@@ -21,11 +21,21 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
   end
 
   defmacro state_machine(schema, column, do: block) do
+    {:__aliases__, _, module_list} = schema
+
     quote location: :keep do
       if @repo_opts == nil, do: @repo_opts([])
 
       defp _beepbop_state_column, do: unquote(column)
-      defp _beepbop_schema, do: unquote(schema)
+      defp _beepbop_schema_module, do: unquote(schema)
+
+      defp _beepbop_schema_name do
+        unquote(module_list)
+        |> List.last()
+        |> Atom.to_string()
+        |> String.downcase()
+        |> String.to_atom()
+      end
 
       unquote(block)
     end
@@ -40,12 +50,27 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
       def state_defined?(state) do
         Enum.member?(states(), state)
       end
+
+      def validate_transition(context, from_states, to_state) do
+        case Map.fetch(context, _beepbop_schema_name()) do
+          {:ok, struct} ->
+            current_state = Map.fetch!(struct, _beepbop_state_column()) |> String.to_atom()
+
+            if state_defined?(to_state) && Enum.member?(from_states, current_state) do
+              :ok
+            else
+              "Cannot transition from '#{current_state}' to '#{to_state}'"
+            end
+
+          :error ->
+            "#{_beepbop_schema_module()} struct is missing from `context`"
+        end
+      end
     end
   end
 
   defmacro event(event, options, callback) do
     quote location: :keep do
-
       @doc """
       Runs the defined callback.
 
@@ -57,19 +82,25 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
         repo_opts = Keyword.get(opts, :repo, [])
         %{from: from_states, to: to_state} = unquote(options)
 
-        param =
-          case context do
-            %BeepBop.State{} = context -> context
-            %{} = context -> BeepBop.State.new(context)
+        validity = validate_transition(context, from_states, to_state)
+
+        if validity == :ok do
+          param =
+            case context do
+              %BeepBop.State{} = context -> context
+              %{} = context -> BeepBop.State.new(context)
+            end
+
+          {status, state_struct} = result = unquote(callback).(param)
+
+          if status == :ok and persist? do
+            repo = _beepbop_repo()
+            repo.transaction(state_struct.multi, @repo_opts)
+          else
+            result
           end
-
-        {status, state_struct} = result = unquote(callback).(param)
-
-        if status == :ok and persist? do
-          repo = _beepbop_repo()
-          repo.transaction(state_struct.multi, @repo_opts)
         else
-          result
+          {:error, validity}
         end
       end
     end
