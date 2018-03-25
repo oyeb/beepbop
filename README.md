@@ -1,21 +1,23 @@
 # BeepBop
 
-**TODO: Add description**
+## TODO
+
+* Accept module name for `callback`. What if callback is not implemented in the module? Compile time warnings/error
+* Remove dependency on `Multi`, by making `BeepBop.Ecto`
+* Compile time warnings about undefined states/unused states.
+* Implement `%{from: %{not: []}}`.
+* Assert non empty from_list, not_list.
+* Implement `%{from: :any}`.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `beepbop` to your list of dependencies in `mix.exs`:
+The package can be installed in your project by adding `beepbop` to your list of
+dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:beepbop, "~> 0.1.0"}
+    {:beepbop, "~> 0.1.0", github: "oyeb/beepbop"}
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/beepbop](https://hexdocs.pm/beepbop).
-
