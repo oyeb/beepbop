@@ -1,11 +1,10 @@
 defmodule BeepBop do
   alias Ecto.Multi
-  
+
   defmacro __using__(opts) do
     unless Keyword.has_key?(opts, :ecto_repo) do
-      raise(ArgumentError, message: ~s{
-
-Please configure an Ecto.Repo by passing an Ecto.Repo like so:
+      raise(~s{Please configure an Ecto.Repo by passing an Ecto.Repo
+    like so:
     use BeepBop, ecto_repo: YourProject.Repo
 })
     end
@@ -23,7 +22,6 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
     {:__aliases__, _, module_list} = schema
 
     quote location: :keep do
-      
       if @repo_opts == nil, do: @repo_opts([])
 
       @beepbop_state_column unquote(column)
@@ -31,7 +29,7 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
       @beepbop_schema_name unquote(module_list)
                            |> List.last()
                            |> Atom.to_string()
-                           |> String.downcase()
+                           |> Macro.underscore()
                            |> String.to_atom()
 
       defp _beepbop_extract_struct(context) do
@@ -50,12 +48,12 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
       defp _beepbop_try_persist(multi, struct, to_state) do
         Multi.run(multi, :persist, fn changes ->
           updated_struct = _beepbop_extract_struct(changes) || struct
-
+          to = Atom.to_string(to_state)
           try do
-            __MODULE__.persist(struct, to_state)
+            __MODULE__.persist(updated_struct, to)
           rescue
             UndefinedFunctionError ->
-              {:ok, Map.put(updated_struct, @beepbop_state_column, to_state)}
+              {:ok, Map.put(updated_struct, @beepbop_state_column, to)}
           end
         end)
       end
@@ -66,12 +64,14 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
 
   defmacro states(states) do
     quote do
+      @beepbop_states unquote(states)
+
       @doc """
       Returns the list of defined states in this machine.
       """
       @spec states :: [atom]
       def states() do
-        unquote(states)
+        @beepbop_states
       end
 
       @doc """
@@ -88,6 +88,7 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
       The `context` must contain a struct of type `#{@beepbop_schema_module}`
       under the `:#{@beepbop_schema_name}` key.
       """
+      @spec validate_transition(%{}, [atom], atom, atom) :: :ok | {:error, String.t()}
       def validate_transition(context, from_states, to_state, event) do
         case _beepbop_extract_struct(context) do
           nil ->
@@ -103,6 +104,18 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
             end
         end
       end
+
+      defp _beepbop_expand_states(%{to: to, not: not_from}) when is_list(not_from) do
+        {Enum.reject(states(), fn x -> x in not_from end), to}
+      end
+
+      defp _beepbop_expand_states(%{from: :any, to: to}) do
+        {states(), to}
+      end
+
+      defp _beepbop_expand_states(%{from: from, to: to}) when is_list(from) do
+        {from, to}
+      end
     end
   end
 
@@ -117,22 +130,21 @@ Please configure an Ecto.Repo by passing an Ecto.Repo like so:
       def unquote(event)(context, opts \\ []) do
         persist? = Keyword.get(opts, :persist, true)
         repo_opts = Keyword.get(opts, :repo, [])
-        %{from: from_states, to: to_state} = unquote(options)
-
+        {from_states, to_state} = _beepbop_expand_states(unquote(options))
         validity = validate_transition(context, from_states, to_state, unquote(event))
 
         if validity == :ok do
-          param =
-            case context do
+          {status, state_struct} =
+            result =
+            context
+            |> case do
               %BeepBop.State{} = context -> context
               %{} = context -> BeepBop.State.new(context)
             end
+            |> unquote(callback).()
 
-          {status, state_struct} = result = unquote(callback).(param)
           schema_struct = _beepbop_extract_struct(context)
-
-          multi =
-            _beepbop_try_persist(state_struct.multi, schema_struct, Atom.to_string(to_state))
+          multi = _beepbop_try_persist(state_struct.multi, schema_struct, to_state)
 
           if status == :ok and persist? do
             repo = @beepbop_repo()

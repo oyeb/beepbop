@@ -5,9 +5,10 @@
 * Accept module name for `callback`. What if callback is not implemented in the module? Compile time warnings/error
 * Remove dependency on `Multi`, by making `BeepBop.Ecto`
 * Compile time warnings about undefined states/unused states.
-* Implement `%{from: %{not: []}}`.
+* [x] Implement `%{from: %{not: []}}`.
 * Assert non empty from_list, not_list.
 * Implement `%{from: :any}`.
+* Implement some custom compile time warnings/checks like ecto
 
 ## Installation
 
