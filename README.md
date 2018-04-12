@@ -2,13 +2,18 @@
 
 ## TODO
 
-* Accept module name for `callback`. What if callback is not implemented in the module? Compile time warnings/error
-* Remove dependency on `Multi`, by making `BeepBop.Ecto`
-* Compile time warnings about undefined states/unused states.
+* [ ] Accept module name for `callback`. What if callback is not implemented in the module? Compile time warnings/error
+* [ ] Remove dependency on `Multi`, by making `BeepBop.Ecto`
+* [ ] Compile time warnings about undefined states/unused states.
 * [x] Implement `%{from: %{not: []}}`.
-* Assert non empty from_list, not_list.
-* Implement `%{from: :any}`.
-* Implement some custom compile time warnings/checks like ecto
+* [ ] Assert non empty from_list, not_list.
+* [x] Implement `%{from: :any}`.
+* [ ] Implement some custom compile time warnings/checks like ecto
+* [ ] Ensure that event names are unique!
+
+
+* Validate with community
+* Pure version?
 
 ## Installation
 

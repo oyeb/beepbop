@@ -1,4 +1,7 @@
 defmodule BeepBop.State do
+  @moduledoc """
+  """
+
   alias Ecto.Multi
 
   defstruct ~w(context multi)a
