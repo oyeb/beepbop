@@ -3,6 +3,12 @@ defmodule BeepBop do
   Manages the state machine of an `Ecto.Schema`.
   """
 
+  # TODO: These macros as really bad, make use of bind_quoted. Read up a real
+  # book on macros.
+
+  alias Ecto.Multi
+  alias BeepBop.Utils
+
   @doc """
   Configures `BeepBop` to work with your `Ecto.Repo`.
 
@@ -18,31 +24,48 @@ defmodule BeepBop do
 })
     end
 
-    quote do
+    quote location: :keep do
       import BeepBop
       alias Ecto.Multi
 
-      @repo_opts nil
-      @beepbop_repo Keyword.fetch!(unquote(opts), :ecto_repo)
+      def __beepbop__(:repo), do: Keyword.fetch!(unquote(opts), :ecto_repo)
     end
   end
 
   defmacro state_machine(schema, column, do: block) do
-    {:__aliases__, _, module_list} = schema
+    # TODO: should validate that such a module exists and it does have the
+    # specified column
+    name = Utils.extract_schema_name(schema)
 
     quote location: :keep do
-      if @repo_opts == nil, do: @repo_opts([])
+      @beepbop_name unquote(name)
+      @beepbop_module unquote(schema)
 
-      @beepbop_state_column unquote(column)
-      @beepbop_schema_module unquote(schema)
-      @beepbop_schema_name unquote(module_list)
-                           |> List.last()
-                           |> Atom.to_string()
-                           |> Macro.underscore()
-                           |> String.to_atom()
+      def __beepbop__(:name), do: @beepbop_name
+      def __beepbop__(:module), do: @beepbop_module
+      def __beepbop__(:column), do: unquote(column)
+
+      defp _beepbop_try_persist(multi, struct, to_state) do
+        Multi.run(multi, :persist, fn changes ->
+          updated_struct = _beepbop_extract_struct(changes) || struct
+          to = Atom.to_string(to_state)
+
+          # TODO: Find an alternative to this construct,
+          # When __MODULE__ has no persist/2, compiler throws a warning.
+          #
+          # A possible solution is to use Module.defines?/2 outside the quote
+          # block... but how??
+          try do
+            __MODULE__.persist(updated_struct, to)
+          rescue
+            UndefinedFunctionError ->
+              {:ok, Map.put(updated_struct, __beepbop__(:column), to)}
+          end
+        end)
+      end
 
       defp _beepbop_extract_struct(context) do
-        case Map.fetch(context, @beepbop_schema_name) do
+        case Map.fetch(context, __beepbop__(:name)) do
           {:ok, %unquote(schema){} = struct} ->
             struct
 
@@ -54,34 +77,23 @@ defmodule BeepBop do
         end
       end
 
-      defp _beepbop_try_persist(multi, struct, to_state) do
-        Multi.run(multi, :persist, fn changes ->
-          updated_struct = _beepbop_extract_struct(changes) || struct
-          to = Atom.to_string(to_state)
-
-          try do
-            __MODULE__.persist(updated_struct, to)
-          rescue
-            UndefinedFunctionError ->
-              {:ok, Map.put(updated_struct, @beepbop_state_column, to)}
-          end
-        end)
-      end
+      # def valid_context?(%BeepBop.State{struct: %unquote(schema){}}), do: true
+      def valid_context?(_), do: false
 
       unquote(block)
     end
   end
 
   defmacro states(states) do
-    quote do
-      @beepbop_states unquote(states)
+    quote location: :keep do
+      def __beepbop__(:states), do: unquote(states)
 
       @doc """
       Returns the list of defined states in this machine.
       """
       @spec states :: [atom]
       def states do
-        @beepbop_states
+        __beepbop__(:states)
       end
 
       @doc """
@@ -90,32 +102,6 @@ defmodule BeepBop do
       @spec state_defined?(atom) :: boolean
       def state_defined?(state) do
         Enum.member?(states(), state)
-      end
-
-      @doc """
-      Validates the `context` and checks if the transition is valid.
-
-      The `context` must contain a struct of type `#{@beepbop_schema_module}`
-      under the `:#{@beepbop_schema_name}` key.
-      """
-      @spec validate_transition(%{}, [atom], atom, atom) :: :ok | {:error, String.t()}
-      def validate_transition(context, from_states, to_state, event) do
-        case _beepbop_extract_struct(context) do
-          nil ->
-            "#{@beepbop_schema_module} struct is missing from `context`"
-
-          struct ->
-            current_state =
-              struct
-              |> Map.fetch!(@beepbop_state_column)
-              |> String.to_atom()
-
-            if state_defined?(to_state) && Enum.member?(from_states, current_state) do
-              :ok
-            else
-              "Cannot transition from '#{current_state}' to '#{to_state}' via '#{event}'"
-            end
-        end
       end
 
       defp _beepbop_expand_states(%{to: to, not: not_from}) when is_list(not_from) do
@@ -128,6 +114,32 @@ defmodule BeepBop do
 
       defp _beepbop_expand_states(%{from: from, to: to}) when is_list(from) do
         {from, to}
+      end
+
+      @doc """
+      Validates the `context` struct and checks if the transition is valid.
+
+      The `context` must contain a struct of type `#{@beepbop_module}`
+      under the `:#{@beepbop_name}` key.
+      """
+      @spec validate_transition(%{}, [atom], atom, atom) :: :ok | {:error, String.t()}
+      def validate_transition(context, from_states, to_state, event) do
+        case _beepbop_extract_struct(context) do
+          nil ->
+            "#{@beepbop_module} struct is missing from `context`"
+
+          struct ->
+            current_state =
+              struct
+              |> Map.fetch!(__beepbop__(:column))
+              |> String.to_atom()
+
+            if state_defined?(to_state) && Enum.member?(from_states, current_state) do
+              :ok
+            else
+              "Cannot transition from '#{current_state}' to '#{to_state}' via '#{event}'"
+            end
+        end
       end
     end
   end
@@ -143,7 +155,7 @@ defmodule BeepBop do
       def unquote(event)(context, opts \\ []) do
         persist? = Keyword.get(opts, :persist, true)
         repo_opts = Keyword.get(opts, :repo, [])
-        {from_states, to_state} = _beepbop_expand_states(unquote(options))
+        {from_states, to_state} = Utils.expand_state(unquote(options))
         validity = validate_transition(context, from_states, to_state, unquote(event))
 
         if validity == :ok do
@@ -160,8 +172,8 @@ defmodule BeepBop do
           multi = _beepbop_try_persist(state_struct.multi, schema_struct, to_state)
 
           if status == :ok and persist? do
-            repo = @beepbop_repo()
-            repo.transaction(multi, @repo_opts)
+            repo = __beepbop__(:repo)
+            repo.transaction(multi, repo_opts)
           else
             {status, struct(state_struct, multi: multi)}
           end
