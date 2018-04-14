@@ -11,7 +11,8 @@ defmodule BeepBop.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [tool: ExCoveralls]
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [coveralls: :test, "coveralls.json": :test, "coveralls.html": :test]
     ]
   end
 
@@ -29,7 +30,7 @@ defmodule BeepBop.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:credo, "~> 0.9.0-rc", only: :dev, runtime: false},
+      {:credo, "~> 0.9.1", only: :dev, runtime: false},
       {:credo_contrib, "~> 0.1.0-rc", only: :dev, runtime: false},
       {:excoveralls, "~> 0.7", only: :test},
       {:ecto, "~> 2.2"},

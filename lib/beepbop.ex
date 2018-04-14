@@ -85,7 +85,7 @@ defmodule BeepBop do
     quote location: :keep do
       {event_from_states, to} =
         case unquote(options) do
-          %{not: not_from, to: to} ->
+          %{from: %{not: not_from}, to: to} ->
             {Enum.reject(@beepbop_states, fn x -> x in not_from end), to}
 
           %{from: :any, to: to} ->
