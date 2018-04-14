@@ -20,7 +20,7 @@ defmodule BeepBop.Example.CardPaymentMachine do
   end
 
   def __persistor_check__ do
-    _beepbop_persist(:foo, :bar)
+    __beepbop_persist(:foo, :bar)
   end
 end
 
@@ -36,6 +36,6 @@ defmodule BeepBop.Example.CardPaymentMachine.WithoutPersist do
   end
 
   def __persistor_check__ do
-    _beepbop_persist(%CardPayment{}, :bar)
+    __beepbop_persist(%CardPayment{}, :bar)
   end
 end
