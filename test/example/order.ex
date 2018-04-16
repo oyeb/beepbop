@@ -16,7 +16,3 @@ defmodule BeepBop.Example.OrderMachine do
   ) do
   end
 end
-
-# defmodule BeepBop.Example.BadOrderMachine do
-#   use BeepBop.Ecto
-# end

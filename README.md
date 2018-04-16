@@ -5,12 +5,14 @@
 
 ## TODO
 
-* [ ] Check if the module is actually a Schema, and that it has the given filed in the struct.
-* [ ] Compile time warnings about undefined states/unused states.
+* [x] Check if the module is actually a Schema, and that it has the given filed in the struct.
+* [ ] Compile time warnings about unused states.
 * [x] Implement `%{from: %{not: []}}`.
 * [x] Implement `%{from: :any}`.
-* [ ] Implement some custom compile time warnings/checks like ecto
+* [x] Implement some custom compile time warnings/checks like ecto
 * [x] Ensure that event names are unique!
+* [ ] Move event function generation to `__before_compile__`
+* [ ] Write tests to cover compile time errors/warnings with `Code.eval_quoted`
 
 ## Installation
 

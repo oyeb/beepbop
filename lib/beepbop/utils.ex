@@ -5,6 +5,8 @@ defmodule BeepBop.Utils do
   Please configure an Ecto.Repo by passing an Ecto.Repo like so:
       use BeepBop, ecto_repo: YourProject.Repo
   """
+  @msg_not_a_struct "does not define a struct"
+  @msg_missing_column "doesn't have any column named:"
 
   @msg_from_atom_list "bad 'from'/'not_from': should be a list of atoms, got: "
   @msg_from_empty "bad 'from': cannot be empty!"
@@ -38,6 +40,16 @@ defmodule BeepBop.Utils do
   def assert_repo!(opts) do
     unless Keyword.has_key?(opts, :ecto_repo) do
       raise(@msg_missing_repo)
+    end
+  end
+
+  def assert_schema!(schema, column) do
+    unless function_exported?(schema, :__schema__, 1) do
+      raise("#{inspect(schema)} #{@msg_not_a_struct}")
+    end
+
+    unless column in schema.__schema__(:fields) do
+      raise("#{inspect(schema)} #{@msg_missing_column} #{inspect(column)}")
     end
   end
 
@@ -75,8 +87,8 @@ defmodule BeepBop.Utils do
 
   defp validate_from([]), do: @msg_from_empty
   defp validate_from(:any), do: :ok
-  defp validate_from(%{not_from: []}), do: :ok
-  defp validate_from(%{not_from: not_from}), do: validate_from(not_from)
+  defp validate_from(%{not: []}), do: :ok
+  defp validate_from(%{not: not_from}), do: validate_from(not_from)
 
   defp validate_from(from) when is_list(from) do
     if Enum.all?(from, fn x -> is_atom(x) end),
@@ -118,8 +130,6 @@ defmodule BeepBop.Utils do
       invalids -> "bad 'from': #{inspect(invalids)}"
     end
   end
-
-  defp validate_from_states(_, from), do: @msg_from_atom_list <> inspect(from)
 
   defp validate_to_state(states, to) when is_atom(to) do
     unless to in states do
