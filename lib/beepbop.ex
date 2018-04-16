@@ -31,8 +31,6 @@ defmodule BeepBop do
   end
 
   defmacro state_machine(schema, column, states, do: block) do
-    # TODO: should validate that such a module exists and it does have the
-    # specified column
     name = Utils.extract_schema_name(schema)
 
     quote location: :keep,
@@ -49,6 +47,7 @@ defmodule BeepBop do
         persist_helpers()
       ])
 
+      Utils.assert_schema!(schema, column)
       Utils.assert_states!(states)
 
       @doc """

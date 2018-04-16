@@ -7,6 +7,8 @@ defmodule BeepBop.UtilsTest do
   Please configure an Ecto.Repo by passing an Ecto.Repo like so:
       use BeepBop, ecto_repo: YourProject.Repo
   """
+  @msg_not_a_struct " does not define a struct"
+  @msg_missing_column "doesn't have any column named:"
 
   @msg_from_atom_list "bad 'from'/'not_from': should be a list of atoms, got: "
   @msg_from_empty "bad 'from': cannot be empty!"
@@ -38,8 +40,6 @@ defmodule BeepBop.UtilsTest do
     b: %{from: @states, to: :baz}
   }
 
-  @wrong_transitions %{foo: :bar}
-
   test "extract_schema_name/1" do
     alias BeepBop.Example.OrderMachine, as: FooBar
     assert Utils.extract_schema_name(quote(do: FooBar)) == :order_machine
@@ -52,6 +52,23 @@ defmodule BeepBop.UtilsTest do
     assert_raise(RuntimeError, @msg_missing_repo, fn -> Utils.assert_repo!([]) end)
   end
 
+  test "assert_schema!/1" do
+    alias BeepBop.Example.CardPayment
+    refute Utils.assert_schema!(CardPayment, :status)
+
+    assert_raise(RuntimeError, "BeepBop.TestRepo" <> @msg_not_a_struct, fn ->
+      Utils.assert_schema!(BeepBop.TestRepo, :foo)
+    end)
+
+    assert_raise(
+      RuntimeError,
+      "BeepBop.Example.CardPayment #{@msg_missing_column} :tricked",
+      fn ->
+        Utils.assert_schema!(CardPayment, :tricked)
+      end
+    )
+  end
+
   test "assert_num_states!/1" do
     assert_raise(RuntimeError, @msg_atleast_one_state, fn ->
       Utils.assert_num_states!([])
@@ -61,11 +78,15 @@ defmodule BeepBop.UtilsTest do
   end
 
   test "assert_states!/1" do
+    refute Utils.assert_states!(@states)
+
+    assert_raise(RuntimeError, @msg_bad_states <> ":foo", fn ->
+      Utils.assert_states!(:foo)
+    end)
+
     assert_raise(RuntimeError, @msg_bad_states <> "[1]", fn ->
       Utils.assert_states!([1])
     end)
-
-    refute Utils.assert_states!([:a])
   end
 
   test "assert_unique_events!/1" do
@@ -82,11 +103,15 @@ defmodule BeepBop.UtilsTest do
   test "assert_transition_opts!/1" do
     refute Utils.assert_transition_opts!(%{from: @states, to: :foo})
     refute Utils.assert_transition_opts!(%{from: :any, to: :foo})
-    refute Utils.assert_transition_opts!(%{from: %{not_from: []}, to: :foo})
-    refute Utils.assert_transition_opts!(%{from: %{not_from: @states}, to: :foo})
+    refute Utils.assert_transition_opts!(%{from: %{not: []}, to: :foo})
+    refute Utils.assert_transition_opts!(%{from: %{not: @states}, to: :foo})
 
     assert_raise(RuntimeError, @msg_bad_transition_format, fn ->
-      Utils.assert_transition_opts!(@wrong_transitions)
+      Utils.assert_transition_opts!(%{foo: :bar})
+    end)
+
+    assert_raise(RuntimeError, @msg_from_atom_list <> ":bar", fn ->
+      Utils.assert_transition_opts!(%{from: :bar, to: :baz})
     end)
 
     assert_raise(RuntimeError, @msg_from_empty, fn ->
@@ -98,7 +123,7 @@ defmodule BeepBop.UtilsTest do
     end)
 
     assert_raise(RuntimeError, @msg_from_atom_list <> "[1, 2]", fn ->
-      Utils.assert_transition_opts!(%{from: %{not_from: [1, 2]}, to: :foo})
+      Utils.assert_transition_opts!(%{from: %{not: [1, 2]}, to: :foo})
     end)
 
     assert_raise(RuntimeError, @msg_to_atom <> "[:foo]", fn ->
