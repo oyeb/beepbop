@@ -26,20 +26,22 @@ defmodule BeepBopTest do
   end
 
   test "context validator" do
-    context = BeepBop.State.new(%CardPayment{})
-    bad_context = BeepBop.State.new(%BeepBopTest{})
+    context = BeepBop.Context.new(%CardPayment{})
+    bad_context = BeepBop.Context.new(%BeepBopTest{})
     assert Machine.valid_context?(context)
+    assert WithoutPersist.valid_context?(context)
+
     refute Machine.valid_context?(%{})
-    refute Machine.valid_context?(%BeepBop.State{valid?: false, struct: %CardPayment{}})
+    refute Machine.valid_context?(%BeepBop.Context{valid?: false, struct: %CardPayment{}})
     refute Machine.valid_context?(bad_context)
   end
 
   test "transition validator" do
-    assert Machine.can_transition?(BeepBop.State.new(%CardPayment{}), :authorize)
-    refute Machine.can_transition?(BeepBop.State.new(%CardPayment{status: "lol"}), :authorize)
+    assert Machine.can_transition?(BeepBop.Context.new(%CardPayment{}), :authorize)
+    refute Machine.can_transition?(BeepBop.Context.new(%CardPayment{status: "lol"}), :authorize)
 
     refute Machine.can_transition?(
-             %BeepBop.State{struct: %CardPayment{}, valid?: false},
+             %BeepBop.Context{struct: %CardPayment{}, valid?: false},
              :authorize
            )
   end
