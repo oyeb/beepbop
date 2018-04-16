@@ -27,15 +27,15 @@ end
 defmodule BeepBop.Example.CardPaymentMachine.WithoutPersist do
   use BeepBop, ecto_repo: BeepBop.TestRepo
 
-  alias BeepBop.Example.CardPayment
+  alias BeepBop.Example.CardPayment, as: CP
 
-  state_machine(CardPayment, :status, ~w[pending]a) do
-    event(:authorize, %{from: [:pending], to: :authorized}, fn c ->
+  state_machine(CP, :status, ~w[pending cancelled]a) do
+    event(:cancel, %{from: [:pending], to: :cancelled}, fn c ->
       {:ok, c}
     end)
   end
 
   def __persistor_check__ do
-    __beepbop_persist(%CardPayment{}, :bar)
+    __beepbop_persist(%CP{}, :bar)
   end
 end

@@ -1,23 +1,23 @@
-defmodule BeepBop.State do
+defmodule BeepBop.Context do
   @moduledoc false
 
   alias Ecto.Multi
 
-  defstruct ~w(context multi struct valid?)a
+  defstruct ~w(struct state multi valid?)a
 
   def new(struct) when is_map(struct) do
     %__MODULE__{
       struct: struct,
-      context: %{},
+      state: %{},
       multi: Multi.new(),
       valid?: true
     }
   end
 
-  def new(struct, context, multi \\ Multi.new()) when is_map(struct) and is_map(context) do
+  def new(struct, state, multi \\ Multi.new()) when is_map(struct) and is_map(state) do
     %__MODULE__{
       struct: struct,
-      context: context,
+      state: state,
       multi: multi,
       valid?: true
     }
