@@ -32,6 +32,11 @@ defmodule BeepBop do
 
   defmacro state_machine(schema, column, states, do: block) do
     name = Utils.extract_schema_name(schema)
+    {states_list, _} = Code.eval_quoted(states)
+
+    Utils.assert_states!(states_list)
+    Utils.assert_num_states!(states_list)
+    Module.put_attribute(__CALLER__.module, :beepbop_states, states_list)
 
     quote location: :keep,
           bind_quoted: [
@@ -42,7 +47,7 @@ defmodule BeepBop do
             block: block
           ] do
       Module.eval_quoted(__MODULE__, [
-        metadata(name, schema, column, states),
+        metadata(name, schema, column),
         context_validator(schema),
         persist_helpers()
       ])
@@ -120,18 +125,16 @@ defmodule BeepBop do
     end
   end
 
-  def metadata(name, schema, column, states) do
+  def metadata(name, schema, column) do
     quote location: :keep,
           bind_quoted: [
             name: name,
             module: schema,
-            column: column,
-            states: states
+            column: column
           ] do
       @beepbop_name name
       @beepbop_module module
       @beepbop_column column
-      @beepbop_states states
 
       def __beepbop__(:name), do: @beepbop_name
       def __beepbop__(:module), do: @beepbop_module
@@ -217,7 +220,6 @@ defmodule BeepBop do
     to_states = Module.get_attribute(env.module, :to_states)
     states = Module.get_attribute(env.module, :beepbop_states)
 
-    Utils.assert_num_states!(states)
     Utils.assert_unique_events!(events)
 
     transitions =

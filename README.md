@@ -14,6 +14,7 @@
 * [ ] Move event function generation to `__before_compile__`
 * [ ] Write tests to cover compile time errors/warnings with `Code.eval_quoted`
 * [ ] Write tests to cover repo operations.
+* [ ] Pick up code attributes written above `event`, like `@doc`.
 
 ## Installation
 
