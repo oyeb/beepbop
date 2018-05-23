@@ -37,7 +37,8 @@ defmodule BeepBop.UtilsTest do
 
   @good_transitions %{
     a: %{from: [:bar], to: :bar},
-    b: %{from: @states, to: :baz}
+    b: %{from: @states, to: :baz},
+    c: %{from: [:bar]}
   }
 
   test "extract_schema_name/1" do

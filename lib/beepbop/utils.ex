@@ -81,6 +81,10 @@ defmodule BeepBop.Utils do
     unless t == :ok, do: raise(t)
   end
 
+  def assert_transition_opts!(%{from: from}) do
+    assert_transition_opts!(%{from: from, to: nil})
+  end
+
   def assert_transition_opts!(_) do
     raise @msg_bad_transition_format
   end
@@ -122,6 +126,10 @@ defmodule BeepBop.Utils do
     end
   end
 
+  defp validate_event(states, event, %{from: from}) do
+    validate_event(states, event, %{from: from, to: nil})
+  end
+
   defp validate_from_states(_, []), do: @msg_not_from_empty
 
   defp validate_from_states(states, from) when is_list(from) do
@@ -132,7 +140,7 @@ defmodule BeepBop.Utils do
   end
 
   defp validate_to_state(states, to) when is_atom(to) do
-    unless to in states do
+    unless to in states or is_nil(to) do
       "bad 'to': #{inspect(to)}"
     end
   end
