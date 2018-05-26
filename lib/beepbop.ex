@@ -185,9 +185,6 @@ defmodule BeepBop do
 
       defp __beepbop_try_persist(%Context{valid?: true} = context, to_state, opts) do
         %{struct: struct, multi: multi} = context
-        repo = __beepbop__(:repo)
-        persist? = Keyword.get(opts, :persist, true)
-        repo_opts = Keyword.get(opts, :repo_opts, [])
 
         final_multi =
           case to_state do
@@ -198,10 +195,21 @@ defmodule BeepBop do
               __beepbop_final_multi(multi, struct, to_state)
           end
 
+        persist? = Keyword.get(opts, :persist, true)
+
         if persist? do
-          repo.transaction(final_multi, repo_opts)
+          repo = __beepbop__(:repo)
+          repo_opts = Keyword.get(opts, :repo_opts, [])
+
+          case repo.transaction(final_multi, repo_opts) do
+            {:ok, result} ->
+              struct(context, multi: result)
+
+            {:error, errors} ->
+              struct(context, valid?: false, multi: errors)
+          end
         else
-          Context.new(context.state, struct, final_multi)
+          struct(context, multi: final_multi)
         end
       end
     end
