@@ -5,21 +5,23 @@ defmodule BeepBop.Context do
 
   defstruct ~w(struct state multi valid?)a
 
-  def new(struct) when is_map(struct) do
-    %__MODULE__{
-      struct: struct,
-      state: %{},
-      multi: Multi.new(),
-      valid?: true
-    }
-  end
+  @typedoc """
+  The Context struct
+  """
+  @type t :: %__MODULE__{
+          struct: struct,
+          state: map,
+          multi: Multi.t(),
+          valid?: boolean
+        }
 
-  def new(struct, state, multi \\ Multi.new()) when is_map(struct) and is_map(state) do
+  @spec new(struct, keyword) :: t
+  def new(struct, opts \\ []) when is_map(struct) do
     %__MODULE__{
       struct: struct,
-      state: state,
-      multi: multi,
-      valid?: true
+      state: Keyword.get(opts, :state, %{}),
+      multi: Keyword.get(opts, :multi, Multi.new()),
+      valid?: Keyword.get(opts, :valid?, true)
     }
   end
 end

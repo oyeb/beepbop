@@ -205,8 +205,11 @@ defmodule BeepBop do
             {:ok, result} ->
               struct(context, multi: result)
 
-            {:error, errors} ->
-              struct(context, valid?: false, multi: errors)
+            {:error, _} = error ->
+              struct(context, valid?: false, multi: error)
+
+            {:error, _, _, _} = error ->
+              struct(context, valid?: false, multi: error)
           end
         else
           struct(context, multi: final_multi)

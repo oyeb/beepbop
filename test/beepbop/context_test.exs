@@ -24,7 +24,12 @@ defmodule BeepBop.ContextTest do
              },
              state: %{best_library_ever: :beepbop},
              multi: %Multi{},
-             valid?: true
-           } = Context.new(%__MODULE__{dummy: :bop}, %{best_library_ever: :beepbop})
+             valid?: false
+           } =
+             Context.new(
+               %__MODULE__{dummy: :bop},
+               state: %{best_library_ever: :beepbop},
+               valid?: false
+             )
   end
 end
