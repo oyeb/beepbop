@@ -9,6 +9,7 @@ defmodule BeepBop.UtilsTest do
   """
   @msg_not_a_struct " does not define a struct"
   @msg_missing_column "doesn't have any column named:"
+  @msg_not_loaded "could not be loaded"
 
   @msg_from_atom_list "bad 'from'/'not_from': should be a list of atoms, got: "
   @msg_from_empty "bad 'from': cannot be empty!"
@@ -68,6 +69,10 @@ defmodule BeepBop.UtilsTest do
         Utils.assert_schema!(CardPayment, :tricked)
       end
     )
+
+    assert_raise(RuntimeError, "FooBar #{@msg_not_loaded}", fn ->
+      Utils.assert_schema!(FooBar, :foobar)
+    end)
   end
 
   test "assert_num_states!/1" do

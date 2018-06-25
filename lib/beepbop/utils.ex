@@ -7,6 +7,7 @@ defmodule BeepBop.Utils do
   """
   @msg_not_a_struct "does not define a struct"
   @msg_missing_column "doesn't have any column named:"
+  @msg_not_loaded "could not be loaded"
 
   @msg_from_atom_list "bad 'from'/'not_from': should be a list of atoms, got: "
   @msg_from_empty "bad 'from': cannot be empty!"
@@ -44,12 +45,16 @@ defmodule BeepBop.Utils do
   end
 
   def assert_schema!(schema, column) do
-    unless function_exported?(schema, :__schema__, 1) do
-      raise("#{inspect(schema)} #{@msg_not_a_struct}")
-    end
+    if Code.ensure_compiled?(schema) do
+      unless function_exported?(schema, :__schema__, 1) do
+        raise("#{inspect(schema)} #{@msg_not_a_struct}")
+      end
 
-    unless column in schema.__schema__(:fields) do
-      raise("#{inspect(schema)} #{@msg_missing_column} #{inspect(column)}")
+      unless column in schema.__schema__(:fields) do
+        raise("#{inspect(schema)} #{@msg_missing_column} #{inspect(column)}")
+      end
+    else
+      raise("#{inspect(schema)} #{@msg_not_loaded}")
     end
   end
 
