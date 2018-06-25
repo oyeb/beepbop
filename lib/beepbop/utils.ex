@@ -19,21 +19,11 @@ defmodule BeepBop.Utils do
   @msg_atleast_one_state "A State Machine must have atleast one state!"
   @msg_bad_transition_format "bad format of `options` in `event/3`, please refer the docs."
 
-  def extract_schema_name({:__aliases__, params, module_as_list}) do
-    new_name = Keyword.get(params, :alias, false)
-
-    mod_name =
-      if new_name do
-        new_name
-        |> Module.split()
-        |> List.last()
-      else
-        module_as_list
-        |> List.last()
-        |> Atom.to_string()
-      end
-
-    mod_name
+  def extract_schema_name(schema_module, env) do
+    schema_module
+    |> Macro.expand_once(env)
+    |> Module.split()
+    |> List.last()
     |> Macro.underscore()
     |> String.to_atom()
   end

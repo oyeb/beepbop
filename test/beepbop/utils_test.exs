@@ -43,10 +43,12 @@ defmodule BeepBop.UtilsTest do
   }
 
   test "extract_schema_name/1" do
-    alias BeepBop.Example.OrderMachine, as: FooBar
-    assert Utils.extract_schema_name(quote(do: FooBar)) == :order_machine
-    assert Utils.extract_schema_name(quote(do: Foo)) == :foo
-    assert Utils.extract_schema_name(quote(do: BeepBop.Example.CardPayment)) == :card_payment
+    alias BeepBop.NotAModule, as: FooBar
+    assert Utils.extract_schema_name(quote(do: FooBar), __ENV__) == :not_a_module
+    assert Utils.extract_schema_name(quote(do: Foo), __ENV__) == :foo
+
+    assert Utils.extract_schema_name(quote(do: BeepBop.Example.CardPayment), __ENV__) ==
+             :card_payment
   end
 
   test "assert_repo!/1" do

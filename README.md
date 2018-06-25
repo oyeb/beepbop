@@ -29,7 +29,7 @@ dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:beepbop, "~> 0.0.2", github: "oyeb/beepbop"}
+    {:beepbop, github: "oyeb/beepbop"}
   ]
 end
 ```

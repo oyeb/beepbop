@@ -10,7 +10,7 @@ defmodule BeepBop.Example.CardPaymentMachine.WithoutPersist do
   alias BeepBop.Example.CardPayment, as: CP
 
   state_machine(CP, :status, ~w[pending cancelled]a) do
-    event(:cancel, %{from: :any, to: :cancelled}, fn context ->
+    event(:cancel, %{from: %{not: [:cancelled]}, to: :cancelled}, fn context ->
       context
     end)
   end
