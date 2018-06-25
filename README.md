@@ -10,6 +10,11 @@
 * [x] Implement `%{from: :any}`.
 * [x] Implement some custom compile time warnings/checks like ecto
 * [x] Ensure that event names are unique!
+* [x] Make `to_state` optional.
+* [x] Finalise the event function signatures:
+     ```elixir
+     @spec event_name(BeepBop.Context.t(), keyword) :: BeepBop.Context.t()
+     ```
 * [ ] Compile time warnings about unused states.
 * [ ] Move event function generation to `__before_compile__`
 * [ ] Write tests to cover compile time errors/warnings with `Code.eval_quoted`
