@@ -116,7 +116,7 @@ defmodule BeepBop do
           |> unquote(callback).()
           |> __beepbop_try_persist(to_state, opts)
         else
-          struct(context, errors: {:error, "cannot transition, bad context"})
+          struct(context, errors: {:error, "cannot transition, bad context"}, valid?: false)
         end
       end
     end
